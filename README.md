@@ -22,11 +22,11 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 
 ## 🔌 Hardware Components
 
-| Component           | Description                             |
+| Component           | Description                              |
 |--------------------|------------------------------------------|
 | ESP32 Board        | Main microcontroller                     |
 | DS3231 RTC Module  | Real-Time Clock for timestamping         |
-| Relay/Input Signal | GPIO18 input (LOW = DG ON, HIGH = OFF)   |
+| Relay/Input Signal | GPIO18 input (LOW = DG ON, HIGH = OFF)  |
 | 4x LEDs + 220Ω     | Power, Internet, DG, Buffer LEDs         |
 | Power Supply       | Powered via DG’s 12V-to-5V converter     |
 | Wi-Fi              | Used for uploading data to Google Sheets |
@@ -35,7 +35,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 
 ## 📐 Pin Configuration
 
-| Signal            | GPIO  | Description              |
+| Signal            | GPIO  | Description               |
 |------------------|-------|---------------------------|
 | DG Status Input  | 18    | Detects ON/OFF from Relay |
 | Power LED        | 5     | Constant ON when powered  |
@@ -52,22 +52,22 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 
 2. Create an Apps Script (Extensions > Apps Script) with this code:
 
+   ```javascript
    function doPost(e) {
-  if (!e || !e.parameter) {
+    if (!e || !e.parameter) {
     return ContentService.createTextOutput("❌ No data received");
-  }
+    }
 
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var date = e.parameter.date;
-  var time = e.parameter.time;
-  var dg = e.parameter.dg;
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var date = e.parameter.date;
+    var time = e.parameter.time;
+    var dg = e.parameter.dg;
 
-  if (date && time && dg) {
+    if (date && time && dg) {
     sheet.appendRow([new Date(), date, time, dg]);
     return ContentService.createTextOutput("✅ Success");
-  } else {
+    } else {
     return ContentService.createTextOutput("⚠️ Missing parameter");
-  }
-}
+    }
+    }
 
- 
