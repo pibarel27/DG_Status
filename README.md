@@ -52,7 +52,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 
 2. Create an Apps Script (Extensions > Apps Script) with this code:
 
-   ```javascript  function doPost(e) {
+   function doPost(e) {
   if (!e || !e.parameter) {
     return ContentService.createTextOutput("❌ No data received");
   }
