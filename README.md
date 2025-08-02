@@ -48,9 +48,9 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 ## 🌐 Google Sheets Integration
 
 1. Create a Google Sheet with columns:  
-   `timestamp` | `dg`
+   `Date Time` | `DG Status`
 
-2. Create an Apps Script (Extensions > Apps Script) with this code:
+3. Create an Apps Script (Extensions > Apps Script) with this code:
 
    ```javascript
    function doPost(e) {
