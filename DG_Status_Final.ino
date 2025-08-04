@@ -6,9 +6,12 @@
 #include "RTClib.h"
 RTC_DS3231 rtc;
 
+bool lastWiFiState = false;
+bool lastInternetState = false;
+
 // Wi-Fi credentials
-const char* ssid = "iPhone";
-const char* password = "Naocha@124";
+const char* ssid = "WIFI NAME";
+const char* password = "PASSWORD";
 
 // Google Apps Script Web App URL
 const char* scriptURL = "https://script.google.com/macros/s/AKfycbxwqMuCwmhqQwhvNHRO_vP8ggXBffqqWTjGoXulzygCehw4ZTcSk8Tn5J3y1wcGsKQYuA/exec";
@@ -135,52 +138,69 @@ void uploadBufferGradually() {
   }
 }
 
-  bool connectToWiFi()
-  {
+//Wifi & Internet Connection
+ bool connectToWiFi()
+{
+  bool currentWiFiState = WiFi.status() == WL_CONNECTED;
 
-    if (WiFi.status() != WL_CONNECTED) {
-
-
-      Serial.print("🌐 Connecting to WiFi");
-
-      WiFi.begin(ssid, password);
-      int attempts = 0;
-      while (WiFi.status() != WL_CONNECTED && attempts++ < 20) {
-        delay(500);
-        Serial.print(".");
-        }
-  
-      if(attempts >= 20) {
-        Serial.println("\n✅ WiFi not connected");
-        return false;
-        }
+  // Try to connect if not already connected
+  if (!currentWiFiState) {
+    Serial.print("🌐 Connecting to WiFi");
+    WiFi.begin(ssid, password);
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts++ < 20) {
+      delay(500);
+      Serial.print(".");
     }
-   
+    currentWiFiState = (WiFi.status() == WL_CONNECTED);
+  }
+
+  // Print WiFi state only on change
+  if (currentWiFiState != lastWiFiState) {
+    lastWiFiState = currentWiFiState;
+    if (currentWiFiState) {
       Serial.println("\n✅ WiFi connected");
-
-    // 2) Try a quick TCP connect (lightweight)
-    WiFiClient client;
-   bool ok = client.connect("google.com", 80, 1000);
-    client.stop();
-    if (ok) {
-      LedStatusINTERNET(true);
-      Serial.println("\n✅ Internet connected");
-      return true;
+    } else {
+      Serial.println("\n❌ WiFi not connected");
+      if (lastInternetState != false) {
+        lastInternetState = false;
+        Serial.println("📡 No internet");
+        LedStatusINTERNET(false);
+      }
+      return false;
     }
+  }
 
-    // 3) Fallback: HTTP HEAD to detect captive portals, etc.
+  // Check internet: first lightweight TCP
+  bool internetOK = false;
+  WiFiClient tcpClient;
+  if (tcpClient.connect("google.com", 80, 1000)) {
+    internetOK = true;
+    tcpClient.stop();
+  } else {
+    // Fallback: HTTP HEAD
     HTTPClient http;
     http.begin("http://clients3.google.com/generate_204");
     http.setTimeout(2000);
     int code = http.sendRequest("HEAD");
     http.end();
+    internetOK = (code == 204);
+  }
 
-    bool result = (code == 204)? true : false;
-    if(result) Serial.println("\n✅ Internet connected"); else Serial.println("\n✅ Internet not connected");
-    LedStatusINTERNET(result);
-    return result;
+  // Print Internet state only on change
+  if (internetOK != lastInternetState) {
+    lastInternetState = internetOK;
+    if (internetOK) {
+      Serial.println("\n✅ Internet connected");
+    } else {
+      Serial.println("\n❌ Internet not connected");
+    }
+  }
 
+  LedStatusINTERNET(internetOK);
+  return internetOK;
 }
+
 
 // Sync RTC from NTP
 void configRTC() {
