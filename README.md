@@ -3,6 +3,9 @@
 This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**, a **DS3231 RTC**, and **Google Sheets** as a cloud-based logbook via **Google Apps Script Web App**.
 
 ---
+<div align="center">
+  <img alt="Demo" src="/IMG_1015.jpeg" />
+</div
 
 ## 📦 Features
 
