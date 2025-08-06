@@ -67,10 +67,11 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
     var dg = e.parameter.dg;
 
     if (date && time && dg) {
-    sheet.appendRow([new Date(), date, time, dg]);
+    sheet.appendRow([date, time, dg]);  // ← No auto timestamp
     return ContentService.createTextOutput("✅ Success");
     } else {
     return ContentService.createTextOutput("⚠️ Missing parameter");
     }
     }
+
 
