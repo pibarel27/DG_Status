@@ -4,17 +4,15 @@
 #include <time.h>
 #include <Wire.h>
 #include "RTClib.h"
+#include <WiFiClientSecure.h> 
 RTC_DS3231 rtc;
 
-bool lastWiFiState = false;
-bool lastInternetState = false;
-
 // Wi-Fi credentials
-const char* ssid = "WIFI NAME";
-const char* password = "PASSWORD";
+const char* ssid = "PROJECT";
+const char* password = "00000001";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "https://script.google.com/macros/s/AKfycbxwqMuCwmhqQwhvNHRO_vP8ggXBffqqWTjGoXulzygCehw4ZTcSk8Tn5J3y1wcGsKQYuA/exec";
+const char* scriptURL = "https://script.google.com/macros/s/AKfycbyOkZyoz2-nTFUsW-fBoTjfATalWDCJMGJItKYPKK4jrN6pYeQoHy3f3vkCsrDwiMJ-/exec";
 
 // NTP configuration
 const char* ntpServer = "pool.ntp.org";
@@ -24,6 +22,9 @@ const int daylightOffset_sec = 0;
 // DG input pin
 const int dgStatusPin = 18;    // HIGH = OFF, LOW = ON
 
+
+bool lastWiFiState = false;
+bool lastInternetState = false;
 // LED pins
 const int LED_INTERNET  = 4;    // Wi-Fi status LED
 const int LED_DG_PIN   = 19;   // DG status LED
@@ -35,6 +36,7 @@ const int BUFFER_SIZE = 100;
 String buffer[BUFFER_SIZE];
 int head = 0;
 int tail = 0;
+
 
 
 // Check if internet is available 
@@ -108,19 +110,33 @@ void addToBuffer(String entry) {
 // Upload one entry
 bool uploadEntry(String entry) {
   if (!connectToWiFi()) return false;
-  int sep = entry.indexOf(',');
-  String timestamp = entry.substring(0, sep);
-  String dgState = entry.substring(sep + 1);
+
+  int commaPos = entry.indexOf(',');
+  String ts       = entry.substring(0, commaPos);
+  String dgState  = entry.substring(commaPos + 1);
+  int spacePos    = ts.indexOf(' ');
+  String dateStr  = ts.substring(0, spacePos);       
+  String timeStr  = ts.substring(spacePos + 1);    
+
+  WiFiClientSecure client;
+  client.setInsecure();   
 
   HTTPClient http;
-  http.begin(scriptURL);
+  http.begin(client, scriptURL);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  String data = "timestamp=" + timestamp + "&dg=" + dgState;
-  int code = http.POST(data);
-  Serial.printf("📤 Uploading: %s | Code: %d\n", data.c_str(), code);
+
+  String body = "date=" + dateStr
+              + "&time=" + timeStr
+              + "&dg="   + dgState;
+
+  // 6) Send it
+  int statusCode = http.POST(body);
+  Serial.printf("📤 POST [%s] → HTTP %d\n", body.c_str(), statusCode);
+
   http.end();
-  return true;                    // you can change to code == 200;
+  return true;   // or `return (statusCode == 200);
 }
+
 
 // Upload buffer gradually
 void uploadBufferGradually() {
@@ -139,7 +155,7 @@ void uploadBufferGradually() {
 }
 
 //Wifi & Internet Connection
- bool connectToWiFi()
+bool connectToWiFi()
 {
   bool currentWiFiState = WiFi.status() == WL_CONNECTED;
 
@@ -162,6 +178,7 @@ void uploadBufferGradually() {
       Serial.println("\n✅ WiFi connected");
     } else {
       Serial.println("\n❌ WiFi not connected");
+      // If WiFi isn't connected, internet can't be either
       if (lastInternetState != false) {
         lastInternetState = false;
         Serial.println("📡 No internet");
@@ -202,13 +219,15 @@ void uploadBufferGradually() {
 }
 
 
+
 // Sync RTC from NTP
 void configRTC() {
   if (!connectToWiFi()) return;
 
   struct tm t;
   if (getTimestamp(t)) {
-    DateTime dt(t.tm_year + 1900,
+    DateTime 
+    dt(t.tm_year + 1900,
     t.tm_mon + 1, 
     t.tm_mday,
     t.tm_hour,
