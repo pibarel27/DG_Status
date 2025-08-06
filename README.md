@@ -4,7 +4,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 
 ---
 <div align="center">
-  <img alt="Demo" src="/image.png" />
+  <img alt="Demo" src="/photo.jpg" />
 </div
 
 ## 📦 Features
