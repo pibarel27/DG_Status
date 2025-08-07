@@ -56,7 +56,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 3. Create an Apps Script (Extensions > Apps Script) with this code:
 
    ```javascript
-   function doPost(e) {
+    function doPost(e) {
     if (!e || !e.parameter) {
     return ContentService.createTextOutput("❌ No data received");
     }
@@ -65,13 +65,14 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
     var date = e.parameter.date;
     var time = e.parameter.time;
     var dg = e.parameter.dg;
-
+  
     if (date && time && dg) {
-    sheet.appendRow([date, time, dg]);  // ← No auto timestamp
-    return ContentService.createTextOutput("✅ Success");
+      sheet.appendRow([date, time, dg]);  // ← No auto timestamp
+      return ContentService.createTextOutput("✅ Success");
     } else {
-    return ContentService.createTextOutput("⚠️ Missing parameter");
+      return ContentService.createTextOutput("⚠️ Missing parameter");
     }
     }
+
 
 
