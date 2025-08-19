@@ -8,8 +8,8 @@
 RTC_DS3231 rtc;
 
 // Wi-Fi credentials
-const char* ssid = "PROJECT";
-const char* password = "00000001";
+const char* ssid = "WIFI_NAME";
+const char* password = "PASSWORD";
 
 // Google Apps Script Web App URL
 const char* scriptURL = "https://script.google.com/macros/s/AKfycbyOkZyoz2-nTFUsW-fBoTjfATalWDCJMGJItKYPKK4jrN6pYeQoHy3f3vkCsrDwiMJ-/exec";
@@ -32,7 +32,7 @@ const int LED_BUF_PIN  = 23;   // Buffer-pending LED
 const int LED_PWR_PIN  =  5;   // Power supply LED
 
 // Ring buffer
-const int BUFFER_SIZE = 100;
+const int BUFFER_SIZE = 500;
 String buffer[BUFFER_SIZE];
 int head = 0;
 int tail = 0;
@@ -111,7 +111,7 @@ void addToBuffer(String entry) {
 bool uploadEntry(String entry) {
   if (!connectToWiFi()) return false;
 
-  int commaPos = entry.indexOf(',');
+  int commaPos    = entry.indexOf(',');
   String ts       = entry.substring(0, commaPos);
   String dgState  = entry.substring(commaPos + 1);
   int spacePos    = ts.indexOf(' ');
@@ -129,7 +129,6 @@ bool uploadEntry(String entry) {
               + "&time=" + timeStr
               + "&dg="   + dgState;
 
-  // 6) Send it
   int statusCode = http.POST(body);
   Serial.printf("📤 POST [%s] → HTTP %d\n", body.c_str(), statusCode);
 
@@ -137,10 +136,9 @@ bool uploadEntry(String entry) {
   return true;   // or `return (statusCode == 200);
 }
 
-
 // Upload buffer gradually
 void uploadBufferGradually() {
-  if (connectToWiFi() || tail == head) return;
+  if (!connectToWiFi() || tail == head) return;
   while (tail != head) {
     if (uploadEntry(buffer[tail])) {
       tail = (tail + 1) % BUFFER_SIZE;
@@ -171,7 +169,6 @@ bool connectToWiFi()
     currentWiFiState = (WiFi.status() == WL_CONNECTED);
   }
 
-  // Print WiFi state only on change
   if (currentWiFiState != lastWiFiState) {
     lastWiFiState = currentWiFiState;
     if (currentWiFiState) {
@@ -218,8 +215,6 @@ bool connectToWiFi()
   return internetOK;
 }
 
-
-
 // Sync RTC from NTP
 void configRTC() {
   if (!connectToWiFi()) return;
@@ -248,17 +243,17 @@ void configRTC() {
 }
 
 void setup() {
-  Serial.begin(115200);
-  pinMode(dgStatusPin, INPUT_PULLUP);
-  pinMode(LED_PWR_PIN, OUTPUT); 
-  pinMode(LED_INTERNET, OUTPUT);
-  pinMode(LED_DG_PIN, OUTPUT);
-  pinMode(LED_BUF_PIN, OUTPUT);
-  digitalWrite(LED_PWR_PIN, HIGH);
-  LedStatusINTERNET(false);
-  LedStatusDG(false);
-  LedStatusRb(false);
-  Wire.begin();
+      Serial.begin(115200);
+      pinMode(dgStatusPin, INPUT_PULLUP);
+      pinMode(LED_PWR_PIN, OUTPUT); 
+      pinMode(LED_INTERNET, OUTPUT);
+      pinMode(LED_DG_PIN, OUTPUT);
+      pinMode(LED_BUF_PIN, OUTPUT);
+      digitalWrite(LED_PWR_PIN, HIGH);
+      LedStatusINTERNET(false);
+      LedStatusDG(false);
+      LedStatusRb(false);
+      Wire.begin();
   if (!rtc.begin()) {
     Serial.println("❌ RTC not found. Please check connections!");
     while (1);
@@ -286,7 +281,7 @@ void loop() {
     String entry = timestamp + "," + dgStr;
 
     long tt = millis();
-    while (millis() - tt < 3000) {
+    while (millis() - tt < 10000) {
       if (digitalRead(dgStatusPin) == lastDGState) {
         Serial.println("False trigger");
         return;
