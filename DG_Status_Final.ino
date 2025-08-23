@@ -7,12 +7,17 @@
 #include <WiFiClientSecure.h> 
 RTC_DS3231 rtc;
 
+
+unsigned long dgChangeStartTime = 0;
+bool dgChangePending = false;
+bool currentDGState = HIGH;  // default assuming DG is OFF
+
 // Wi-Fi credentials
-const char* ssid = "WIFI_NAME";
-const char* password = "PASSWORD";
+const char* ssid = "WIFI_Name";
+const char* password = "Password";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "https://script.google.com/macros/s/AKfycbyOkZyoz2-nTFUsW-fBoTjfATalWDCJMGJItKYPKK4jrN6pYeQoHy3f3vkCsrDwiMJ-/exec";
+const char* scriptURL = "Sheet_Weblink";
 
 // NTP configuration
 const char* ntpServer = "pool.ntp.org";
@@ -111,7 +116,7 @@ void addToBuffer(String entry) {
 bool uploadEntry(String entry) {
   if (!connectToWiFi()) return false;
 
-  int commaPos    = entry.indexOf(',');
+  int commaPos = entry.indexOf(',');
   String ts       = entry.substring(0, commaPos);
   String dgState  = entry.substring(commaPos + 1);
   int spacePos    = ts.indexOf(' ');
@@ -138,7 +143,7 @@ bool uploadEntry(String entry) {
 
 // Upload buffer gradually
 void uploadBufferGradually() {
-  if (!connectToWiFi() || tail == head) return;
+  if (connectToWiFi() || tail == head) return;
   while (tail != head) {
     if (uploadEntry(buffer[tail])) {
       tail = (tail + 1) % BUFFER_SIZE;
@@ -254,6 +259,7 @@ void setup() {
       LedStatusDG(false);
       LedStatusRb(false);
       Wire.begin();
+      
   if (!rtc.begin()) {
     Serial.println("❌ RTC not found. Please check connections!");
     while (1);
@@ -267,47 +273,59 @@ void setup() {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     configRTC();
   }
-  lastDGState = digitalRead(dgStatusPin);
-  lastTimeRtcUpdated = millis();
-  LedStatusDG(lastDGState == LOW); // show DG LED status
+currentDGState = digitalRead(dgStatusPin);
+lastDGState = currentDGState;
+lastTimeRtcUpdated = millis();
+LedStatusDG(currentDGState == LOW); // show DG LED status
+
 }
 
 void loop() {
-  bool currentDGState = digitalRead(dgStatusPin);
-  if (currentDGState != lastDGState) {
-    Serial.println("DG state has changed");
-    String dgStr = (currentDGState == LOW) ? "ON" : "OFF";
-    String timestamp = GetTimeStampFromRTC();
-    String entry = timestamp + "," + dgStr;
+  bool newDGState = digitalRead(dgStatusPin);
 
-    long tt = millis();
-    while (millis() - tt < 10000) {
-      if (digitalRead(dgStatusPin) == lastDGState) {
-        Serial.println("False trigger");
-        return;
+  // DG state changed? Start debounce timer
+  if (newDGState != currentDGState && !dgChangePending) {
+    dgChangeStartTime = millis();
+    dgChangePending = true;
+    Serial.println("🕒 DG state change detected, validating...");
+  }
+
+  // If debounce is pending and delay passed
+  if (dgChangePending && (millis() - dgChangeStartTime >= 10000)) {
+    bool confirmedState = digitalRead(dgStatusPin);
+
+    // Confirm that the new state is still the same after debounce time
+    if (confirmedState != currentDGState) {
+      currentDGState = confirmedState;
+      dgChangePending = false;
+
+      Serial.println("✅ DG state change confirmed");
+      String dgStr = (currentDGState == LOW) ? "ON" : "OFF";
+      String timestamp = GetTimeStampFromRTC();
+      String entry = timestamp + "," + dgStr;
+
+      LedStatusDG(currentDGState == LOW);
+
+      if (connectToWiFi()) {
+        uploadEntry(entry);
+      } else {
+        addToBuffer(entry);
+        printBuffer();
       }
-    }
-
-    lastDGState = currentDGState;    
-    LedStatusDG(currentDGState == LOW);
-
-    Serial.println("No false trigger");
-    if (connectToWiFi()) {
-      uploadEntry(entry);
     } else {
-      addToBuffer(entry);
-      printBuffer();
+      // State changed back — false trigger
+      Serial.println("❌ False DG trigger — change reverted");
+      dgChangePending = false;
     }
   }
 
   uploadBufferGradually();
 
-  // Update RTC every hour
+  // RTC update hourly
   if (millis() - lastTimeRtcUpdated > 3600000L) {
     lastTimeRtcUpdated = millis();
     if (connectToWiFi()) {
       configRTC();
     }
   }
-
 }
