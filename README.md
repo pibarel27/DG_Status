@@ -60,7 +60,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
     if (!e || !e.parameter) {
     return ContentService.createTextOutput("❌ No data received");
     }
-
+  
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var date = e.parameter.date;
     var time = e.parameter.time;
@@ -73,6 +73,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
       return ContentService.createTextOutput("⚠️ Missing parameter");
     }
     }
+
 
 
 
