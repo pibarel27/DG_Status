@@ -13,7 +13,7 @@ bool dgChangePending = false;
 bool currentDGState = HIGH; 
 
 // Wi-Fi credentials
-const char* ssid = "Rubal";
+const char* ssid = "PROJECT";
 const char* password = "00000001";
 
 // Google Apps Script Web App URL
@@ -135,7 +135,7 @@ bool uploadEntry(String entry) {
   Serial.printf("📤 POST [%s] → HTTP %d\n", body.c_str(), statusCode);
 
   http.end();
-  return true;   // or `return (statusCode == 200);
+  return (statusCode == 200);   // or `return (statusCode == 200);
 }
 
 // Upload buffer gradually
