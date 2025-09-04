@@ -10,14 +10,14 @@ RTC_DS3231 rtc;
 
 unsigned long dgChangeStartTime = 0;
 bool dgChangePending = false;
-bool currentDGState = HIGH;  // default assuming DG is OFF
+bool currentDGState = HIGH; 
 
 // Wi-Fi credentials
-const char* ssid = "WIFI_Name";
-const char* password = "Password";
+const char* ssid = "Rubal";
+const char* password = "00000001";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "Sheet_Weblink";
+const char* scriptURL = "https://script.google.com/macros/s/AKfycbz37lv-v3xQiw4r25uf_FGPZQRoNPP44qoymkh7VxiL1vHjHsQKqQQaaUGAo94AY98JhA/exec";
 
 // NTP configuration
 const char* ntpServer = "pool.ntp.org";
@@ -26,7 +26,6 @@ const int daylightOffset_sec = 0;
 
 // DG input pin
 const int dgStatusPin = 18;    // HIGH = OFF, LOW = ON
-
 
 bool lastWiFiState = false;
 bool lastInternetState = false;
@@ -37,12 +36,10 @@ const int LED_BUF_PIN  = 23;   // Buffer-pending LED
 const int LED_PWR_PIN  =  5;   // Power supply LED
 
 // Ring buffer
-const int BUFFER_SIZE = 500;
+const int BUFFER_SIZE = 300;
 String buffer[BUFFER_SIZE];
 int head = 0;
 int tail = 0;
-
-
 
 // Check if internet is available 
 bool internetOK() {
@@ -143,7 +140,7 @@ bool uploadEntry(String entry) {
 
 // Upload buffer gradually
 void uploadBufferGradually() {
-  if (connectToWiFi() || tail == head) return;
+  if (!connectToWiFi() || tail == head) return;
   while (tail != head) {
     if (uploadEntry(buffer[tail])) {
       tail = (tail + 1) % BUFFER_SIZE;
@@ -190,7 +187,6 @@ bool connectToWiFi()
     }
   }
 
-  // Check internet: first lightweight TCP
   bool internetOK = false;
   WiFiClient tcpClient;
   if (tcpClient.connect("google.com", 80, 1000)) {
@@ -206,7 +202,6 @@ bool connectToWiFi()
     internetOK = (code == 204);
   }
 
-  // Print Internet state only on change
   if (internetOK != lastInternetState) {
     lastInternetState = internetOK;
     if (internetOK) {
@@ -226,26 +221,25 @@ void configRTC() {
 
   struct tm t;
   if (getTimestamp(t)) {
-    DateTime 
-    dt(t.tm_year + 1900,
-    t.tm_mon + 1, 
-    t.tm_mday,
-    t.tm_hour,
-    t.tm_min,
-    t.tm_sec);
-    // Push the new time to the RTC
+    // Create DateTime from struct tm (RTClib DateTime constructor expects year, month, day, hour, min, sec)
+    DateTime dt(
+      t.tm_year + 1900,
+      t.tm_mon  + 1,
+      t.tm_mday,
+      t.tm_hour,
+      t.tm_min,
+      t.tm_sec
+    );
+
+    // push the new time to the RTC
     rtc.adjust(dt);
     char buf[70];
     sprintf(buf, "RTC configured: %02d/%02d/%04d %02d:%02d:%02d",
-            dt.day(),
-            dt.month(),
-            dt.year(),
-            dt.hour(),
-            dt.minute(),
-            dt.second());
+            dt.day(), dt.month(), dt.year(), dt.hour(), dt.minute(), dt.second());
     Serial.println(buf);
   }
 }
+
 
 void setup() {
       Serial.begin(115200);
@@ -283,18 +277,15 @@ LedStatusDG(currentDGState == LOW); // show DG LED status
 void loop() {
   bool newDGState = digitalRead(dgStatusPin);
 
-  // DG state changed? Start debounce timer
   if (newDGState != currentDGState && !dgChangePending) {
     dgChangeStartTime = millis();
     dgChangePending = true;
     Serial.println("🕒 DG state change detected, validating...");
   }
 
-  // If debounce is pending and delay passed
-  if (dgChangePending && (millis() - dgChangeStartTime >= 10000)) {
+  if (dgChangePending && (millis() - dgChangeStartTime >= 180000)) {
     bool confirmedState = digitalRead(dgStatusPin);
 
-    // Confirm that the new state is still the same after debounce time
     if (confirmedState != currentDGState) {
       currentDGState = confirmedState;
       dgChangePending = false;
@@ -313,7 +304,6 @@ void loop() {
         printBuffer();
       }
     } else {
-      // State changed back — false trigger
       Serial.println("❌ False DG trigger — change reverted");
       dgChangePending = false;
     }
