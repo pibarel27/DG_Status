@@ -13,11 +13,11 @@ bool dgChangePending = false;
 bool currentDGState = HIGH; 
 
 // Wi-Fi credentials
-const char* ssid = "PROJECT";
-const char* password = "00000001";
+const char* ssid = "WIFI_NAME";
+const char* password = "PASSWORD";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "https://script.google.com/macros/s/AKfycbz37lv-v3xQiw4r25uf_FGPZQRoNPP44qoymkh7VxiL1vHjHsQKqQQaaUGAo94AY98JhA/exec";
+const char* scriptURL = "Web App URL";
 
 // NTP configuration
 const char* ntpServer = "pool.ntp.org";
