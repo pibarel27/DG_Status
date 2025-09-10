@@ -14,10 +14,11 @@ bool currentDGState = HIGH;
 
 // Wi-Fi credentials
 const char* ssid = "WIFI_NAME";
-const char* password = "PASSWORD";
+const char* password = "Password";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "Web App URL";
+const char* scriptURL = "Web_App Link";
+
 
 // NTP configuration
 const char* ntpServer = "pool.ntp.org";
@@ -64,11 +65,13 @@ void LedStatusRb(bool status) {
 
 // Print buffer for debug
 void printBuffer() {
-  for (int i = 0; i < BUFFER_SIZE; i++) {
-    Serial.print(buffer[i]);
-    Serial.print(",");
-  }
-  Serial.println();
+      int i = tail;
+    while (i != head) {
+        Serial.print(buffer[i]);
+        Serial.print(",");
+        i = (i + 1) % BUFFER_SIZE;
+    }
+    Serial.println();
 }
 
 // Get timestamp from NTP
@@ -135,23 +138,22 @@ bool uploadEntry(String entry) {
   Serial.printf("📤 POST [%s] → HTTP %d\n", body.c_str(), statusCode);
 
   http.end();
-  return (statusCode == 200);   // or `return (statusCode == 200);
+      return (statusCode == 200 || statusCode == 302);
+   // or `return (statusCode == 200);
 }
 
 // Upload buffer gradually
 void uploadBufferGradually() {
-  if (!connectToWiFi() || tail == head) return;
-  while (tail != head) {
-    if (uploadEntry(buffer[tail])) {
-      tail = (tail + 1) % BUFFER_SIZE;
-    } else {
-      break;
+  if (tail != head) {
+        if (uploadEntry(buffer[tail])) {
+            tail = (tail + 1) % BUFFER_SIZE;
+        }
     }
-  }
-  // If buffer is empty, turn off LED
-  if (tail == head) {
-    LedStatusRb(false);
-  }
+
+    // If buffer is empty, turn off LED
+    if (tail == head) {
+        LedStatusRb(false);
+    }
 }
 
 //Wifi & Internet Connection
