@@ -13,11 +13,11 @@ bool dgChangePending = false;
 bool currentDGState = HIGH; 
 
 // Wi-Fi credentials
-const char* ssid = "WIFI_NAME";
-const char* password = "Password";
+const char* ssid = "JioFiber";
+const char* password = "Piba1998";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "Web_App Link";
+const char* scriptURL = "https://script.google.com/macros/s/AKfycbxbcigxyJhFFueMGABGPHXOtzr339ZujV0XQPwQM3oG9a8Z83WrfNB4xQii-o-YClI2Ng/exec";
 
 
 // NTP configuration
@@ -277,37 +277,36 @@ LedStatusDG(currentDGState == LOW); // show DG LED status
 }
 
 void loop() {
-  bool newDGState = digitalRead(dgStatusPin);
+  bool currentDGState = digitalRead(dgStatusPin);
 
-  if (newDGState != currentDGState && !dgChangePending) {
-    dgChangeStartTime = millis();
-    dgChangePending = true;
-    Serial.println("🕒 DG state change detected, validating...");
-  }
+  if (currentDGState != lastDGState) {
+    Serial.println("DG state has changed");
 
-  if (dgChangePending && (millis() - dgChangeStartTime >= 180000)) {
-    bool confirmedState = digitalRead(dgStatusPin);
+    // Timestamp
+    String timestamp = GetTimeStampFromRTC();
+    String entry = timestamp + "," + ((currentDGState == LOW) ? "ON" : "OFF");
 
-    if (confirmedState != currentDGState) {
-      currentDGState = confirmedState;
-      dgChangePending = false;
-
-      Serial.println("✅ DG state change confirmed");
-      String dgStr = (currentDGState == LOW) ? "ON" : "OFF";
-      String timestamp = GetTimeStampFromRTC();
-      String entry = timestamp + "," + dgStr;
-
-      LedStatusDG(currentDGState == LOW);
-
-      if (connectToWiFi()) {
-        uploadEntry(entry);
-      } else {
-        addToBuffer(entry);
-        printBuffer();
+    // Check stability
+    unsigned long changeTime = millis();
+    while (millis() - changeTime < 180000UL) {
+      if (digitalRead(dgStatusPin) == lastDGState) {
+        Serial.println("False trigger");
+        return; // stop here, don't continue
       }
+      delay(50);
+    }
+
+    // If we reach here → no false trigger
+    lastDGState = currentDGState;
+    Serial.println("No false trigger");
+
+    LedStatusDG(currentDGState == LOW);
+
+    if (WiFi.status() == WL_CONNECTED) {
+      uploadEntry(entry);
     } else {
-      Serial.println("❌ False DG trigger — change reverted");
-      dgChangePending = false;
+      addToBuffer(entry);
+      printBuffer();
     }
   }
 
