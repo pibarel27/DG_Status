@@ -1,4 +1,3 @@
-
 //ESP32 Diesel Generator Status Logger with RTC
 
 #include <stdio.h>
@@ -12,7 +11,7 @@
 #include <WiFiClientSecure.h>
 
 #define RING_SIZE 100  // 100
-#define NODE_SIZE 32   // actual 25+1
+#define NODE_SIZE 64   // actual 25+1
 
 RTC_DS3231 rtc;
 
@@ -20,11 +19,11 @@ RTC_DS3231 rtc;
 bool lastDGState;
 long lastTimeRtcUpdated = 0;
 // Wi-Fi credentials
-const char* ssid = "PROJECT";
-const char* password = "00000001";
+const char* ssid = "COOLDUDE69";
+const char* password = "cooldude69";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "https://script.google.com/macros/s/AKfycbzLVVVsFOWn8hC2nRZyx_PUqKz5sYLBI-fHGfBjND6d44BSsPaVE2FMa582cu5SgQcP0Q/exec";
+const char* scriptURL = "https://script.google.com/macros/s/AKfycbx4I3f9rpHoI-JotC-h5evnFiwDV0xw_-MIfNJc-r-G-LrY-d05oA7gq_eP2Xv-i-Io_Q/exec?";
 
 // NTP configuration
 const char* ntpServer = "pool.ntp.org";
@@ -216,7 +215,7 @@ void configRTC() {
     // push the new time to the RTC
     rtc.adjust(dt);
     char buf[70];
-    sprintf(buf, "RTC configured: %02d/%02d/%04d %02d:%02d:%02d",
+    snprintf(buf, sizeof(buf), "RTC configured: %02d/%02d/%04d %02d:%02d:%02d",
             dt.day(), dt.month(), dt.year(), dt.hour(), dt.minute(), dt.second());
     Serial.println(buf);
   }
@@ -307,8 +306,8 @@ bool uploadEntry(char* buf) {
     if (validateDate(date) && validateTime(time) && validateStatus(status)) {
       printf("✅ Format is valid.\n");
 
-      char body[50];
-      sprintf(body, "date=%s&time=%s&dg=%s", date, time, status);
+      char body[NODE_SIZE];
+      snprintf(body, sizeof(body), "date=%s&time=%s&dg=%s", date, time, status);
       Serial.printf("DEBUG uploadEntry(): POST -> %s\n", body);
 
       int statusCode = http.POST(body);
@@ -344,7 +343,7 @@ void uploadBufferGradually() {
 
  static bool empty = false; 
 
-  if (!connectToWiFi()) {
+  if (!connectToWiFi() && rb.count != 0) {
     Serial.println("Buffer pending but no internet");
     return;
   }
@@ -388,7 +387,7 @@ void setup() {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
-  
+
 
   printf("RTC is running.\n");
 
@@ -414,7 +413,7 @@ void loop() {
     Serial.println("DG state has changed");
     char timestamp[NODE_SIZE];
     GetTimeStampFromRTC(timestamp);
-    sprintf(entry, "%s, %s", timestamp, (currentDGState == LOW) ? "ON" : "OFF");
+    snprintf(entry, sizeof(entry), "%s, %s", timestamp, (currentDGState == LOW) ? "ON" : "OFF");
 
     long tt = millis();
     while (millis() - tt < 60000) {
@@ -423,9 +422,10 @@ void loop() {
         printf("Current state of DG : %s\n", lastDGState == LOW ? "ON" : "OFF");
         return;
       }
+      delay(10); 
     }
 
-    lastDGState = currentDGState;
+    lastDGState = currentDGState; 
     printf("Current state of DG : %s\n", lastDGState  == LOW? "ON" : "OFF");
 
     LedStatusDG(currentDGState == LOW);
