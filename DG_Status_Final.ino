@@ -19,11 +19,11 @@ RTC_DS3231 rtc;
 bool lastDGState;
 long lastTimeRtcUpdated = 0;
 // Wi-Fi credentials
-const char* ssid = "COOLDUDE69";
-const char* password = "cooldude69";
+const char* ssid = "";
+const char* password = "";
 
 // Google Apps Script Web App URL
-const char* scriptURL = "https://script.google.com/macros/s/AKfycbx4I3f9rpHoI-JotC-h5evnFiwDV0xw_-MIfNJc-r-G-LrY-d05oA7gq_eP2Xv-i-Io_Q/exec?";
+const char* scriptURL = "";
 
 // NTP configuration
 const char* ntpServer = "pool.ntp.org";
@@ -403,6 +403,7 @@ void setup() {
   lastTimeRtcUpdated = millis();
 
   delay(3000);
+ // delay(10000);
 }
 
 void loop() {
@@ -422,7 +423,7 @@ void loop() {
         printf("Current state of DG : %s\n", lastDGState == LOW ? "ON" : "OFF");
         return;
       }
-      delay(10); 
+      delay(50); 
     }
 
     lastDGState = currentDGState; 
