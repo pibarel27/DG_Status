@@ -31,7 +31,7 @@ const long gmtOffset_sec = 19800;  // GMT+5:30
 const int daylightOffset_sec = 0;
 
 // DG input pin
-const int dgStatusPin = 18;  // HIGH = OFF, LOW = ON
+const int dgStatusPin = 15;  // HIGH = OFF, LOW = ON
 
 
 // LED pins
@@ -278,20 +278,6 @@ int validateStatus(const char* status) {
 
 // Upload one entry (REPLACE existing uploadEntry)
 bool uploadEntry(char* buf) {
-  if (!connectToWiFi()) {
-    Serial.println("DEBUG uploadEntry(): no WiFi/internet");
-    return false;
-  }
-
-
-  WiFiClientSecure client;
-  client.setInsecure();  // pragmatic for Apps Script (insecure TLS verification)
-
-  HTTPClient http;
-  http.begin(client, scriptURL);
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-
-
 
   char* date = strtok(buf, ", ");
   char* time = strtok(NULL, ", ");
@@ -302,15 +288,37 @@ bool uploadEntry(char* buf) {
     printf("Time  : %s\n", time);
     printf("Status: %s\n", status);
 
+  if (!connectToWiFi()) {
+    Serial.println("DEBUG uploadEntry(): no WiFi/internet");
+    return false;
+  }
+
+
+  WiFiClientSecure client;
+  client.setInsecure();  // pragmatic for Apps Script (insecure TLS verification)
+
+
+char body[NODE_SIZE + 150];
+      snprintf(body, sizeof(body), "%s?date=%s&time=%s&dg=%s", scriptURL, date, time, status);
+      Serial.printf("DEBUG uploadEntry(): POST -> %s\n", body);
+
+  HTTPClient http;
+  bool result = http.begin(client, body);
+  if(result){
+      printf("\n  httpClient initialized. \n");
+  } else {
+      printf("\n  httpClient failed to initialize. \n");
+  }
+
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");  
+
     // Validate
     if (validateDate(date) && validateTime(time) && validateStatus(status)) {
       printf("✅ Format is valid.\n");
+    
+     //scriptURL
 
-      char body[NODE_SIZE];
-      snprintf(body, sizeof(body), "date=%s&time=%s&dg=%s", date, time, status);
-      Serial.printf("DEBUG uploadEntry(): POST -> %s\n", body);
-
-      int statusCode = http.POST(body);
+      int statusCode = http.GET();
 
       if (statusCode > 0) {
         printf("Upload success.\n");
