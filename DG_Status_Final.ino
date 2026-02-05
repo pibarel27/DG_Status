@@ -345,6 +345,55 @@ char body[NODE_SIZE + 150];
   return false;
 }
 
+// HEARTBEAT
+void sendHeartbeat() {
+
+  char heartbeatScriptURL[200] = "https://script.google.com/macros/s/AKfycbyibLFdLgSsl2v0279oa9PPuhiwcTd46Wb7Um2wdKhLRD3b4KNoiCXORMsk4daFDENc/exec";
+  if (!connectToWiFi()) return;
+
+  char ts[NODE_SIZE];
+  GetTimeStampFromRTC(ts);
+  char date[20], time[20];
+
+  sscanf(ts, "%10s %8s", date, time);
+
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  char url[200];
+  snprintf(heartbeatScriptURL, sizeof(url),
+           "%s?hb=1&date=%s&time=%s",
+           heartbeatScriptURL, time, date);
+        Serial.println(ts);
+        // Serial.println("rtc", rtc.now());
+
+  HTTPClient http;
+  if (http.begin(client, url)) {
+    int code = http.GET();
+    if (code > 0) {
+      Serial.println("❤️ Heartbeat sent");
+    } else {
+      Serial.println("❌ Heartbeat failed");
+    }
+    http.end();
+  }
+}
+
+// test
+void readAllBuffer() {
+  if (rb.count == 0) {
+    Serial.println("Buffer is empty");
+    return;
+  }
+
+  Serial.println("Reading buffer (oldest → newest):");
+
+  int idx = rb.tail;
+  for (int i = 0; i < rb.count; i++) {
+    Serial.printf("[%d] %s\n", i, rb.data[idx]);
+    idx = (idx + 1) % RING_SIZE;
+  }
+}
 
 
 void uploadBufferGradually() {
@@ -357,7 +406,7 @@ void uploadBufferGradually() {
   }
 
   int result = Remove(out);
-
+  Serial.print(result);
   if (result) {
     empty = false;
     uploadEntry(out);
@@ -410,6 +459,8 @@ void setup() {
   LedStatusDG(lastDGState == LOW);  // show DG LED status
   lastTimeRtcUpdated = millis();
 
+  sendHeartbeat();
+
   delay(3000);
  // delay(10000);
 }
@@ -442,7 +493,8 @@ void loop() {
     Serial.println("No false trigger");
 
     if (connectToWiFi()) {
-      uploadEntry(entry);
+      // uploadEntry(entry);
+      Add(entry);
     } else {
       Add(entry);
       //printBuffer();
@@ -450,6 +502,19 @@ void loop() {
   }
 
   uploadBufferGradually();
+  
+  readAllBuffer();
+
+  static unsigned long lastHeartbeat = 0;
+  // HEARTBEAT
+  if (millis() - lastHeartbeat > 900000UL) {  // every 15 min
+    lastHeartbeat = millis();
+    sendHeartbeat();
+  }
+  
+  // buffer indicator
+  if( rb.count > 0)
+
 
   // Update RTC every hour
   if (millis() - lastTimeRtcUpdated > 3600000L) {
