@@ -54,7 +54,8 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
    `Date` | `Time` | `DG Status`
 
 3. Create an Apps Script (Extensions > Apps Script) with this code:
-   
+    ##  DG Status, Date & Time
+
 
    ```javascript
     function doGet(e) {
@@ -75,7 +76,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
     return ContentService.createTextOutput("⚠️ Missing parameter");
     }
     }
- ##  Heartbeat
+ ##  Heartbeat (New Sheets)
   ```javascript (Heartbeat)
    function doGet(e) {
   if(!e || !e.parameter) {
