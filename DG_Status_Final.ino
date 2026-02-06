@@ -1,3 +1,4 @@
+// CODE MODIFIED BY APPRENTICEs 2025-2026 BATCH 
 //ESP32 Diesel Generator Status Logger with RTC
 
 #include <stdio.h>
@@ -348,7 +349,7 @@ char body[NODE_SIZE + 150];
 // HEARTBEAT
 void sendHeartbeat() {
 
-  char heartbeatScriptURL[200] = "https://script.google.com/macros/s/AKfycbyibLFdLgSsl2v0279oa9PPuhiwcTd46Wb7Um2wdKhLRD3b4KNoiCXORMsk4daFDENc/exec";
+  char heartbeatScriptURL[200] = "";
   if (!connectToWiFi()) return;
 
   char ts[NODE_SIZE];
@@ -361,11 +362,10 @@ void sendHeartbeat() {
   client.setInsecure();
 
   char url[200];
-  snprintf(heartbeatScriptURL, sizeof(url),
+  snprintf(url, sizeof(url),
            "%s?hb=1&date=%s&time=%s",
            heartbeatScriptURL, time, date);
-        Serial.println(ts);
-        // Serial.println("rtc", rtc.now());
+           Serial.printf("Heartbeat Timestamp: %s\n", ts);
 
   HTTPClient http;
   if (http.begin(client, url)) {
@@ -406,7 +406,7 @@ void uploadBufferGradually() {
   }
 
   int result = Remove(out);
-  Serial.print(result);
+  // Serial.println(result);
   if (result) {
     empty = false;
     uploadEntry(out);
@@ -503,17 +503,21 @@ void loop() {
 
   uploadBufferGradually();
   
-  readAllBuffer();
+  // readAllBuffer();
 
-  static unsigned long lastHeartbeat = 0;
   // HEARTBEAT
+  static unsigned long lastHeartbeat = 0;
   if (millis() - lastHeartbeat > 900000UL) {  // every 15 min
     lastHeartbeat = millis();
     sendHeartbeat();
   }
   
   // buffer indicator
-  if( rb.count > 0)
+  if( rb.count > 0){
+    LedStatusRb(true); 
+  } else {
+     LedStatusRb(false);
+  }
 
 
   // Update RTC every hour
@@ -524,3 +528,4 @@ void loop() {
     }
   }
 }
+
