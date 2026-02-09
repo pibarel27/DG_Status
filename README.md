@@ -40,7 +40,7 @@ This project logs **Diesel Generator (DG)** ON/OFF timestamps using an **ESP32**
 
 | Signal            | GPIO  | Description               |
 |------------------|-------|---------------------------|
-| DG Status Input  | 18    | Detects ON/OFF from Relay |
+| DG Status Input  | 15    | Detects ON/OFF from Relay |
 | Power LED        | 5     | Constant ON when powered  |
 | Internet LED     | 4     | ON when internet is up    |
 | DG LED           | 19    | ON when DG is ON          |
